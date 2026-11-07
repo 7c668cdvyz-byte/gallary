@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Advanced Live Viewer</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;600&display=swap');
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            background: #0a0a0a;
+            color: #fff;
+            padding-bottom: 50px;
+        }
+
+        /* হেডার সেকশন */
+        header {
+            background: rgba(20, 20, 20, 0.9);
+            backdrop-filter: blur(10px);
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            border-bottom: 1px solid #333;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        }
+
+        .status-box {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+
+        .dot {
+            width: 10px;
+            height: 10px;
+            background: #ff007f;
+            border-radius: 50%;
+            animation: pulse 1.5s infinite;
+        }
+        
+        .dot.active {
+            background: #00ffcc;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0.7); }
+            70% { transform: scale(1); box-shadow: 0 0 0 10px rgba(0, 255, 204, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(0, 255, 204, 0); }
+        }
+
+        .counter {
+            font-size: 14px;
+            background: #222;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid #444;
+        }
+
+        /* লেটেস্ট ফটো সেকশন */
+        .latest-section {
+            padding: 20px;
+            text-align: center;
+        }
+
+        .latest-title {
+            font-size: 16px;
+            color: #aaa;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        #latestImage {
+            width: 100%;
+            max-width: 500px;
+            border-radius: 15px;
+            border: 2px solid #00ffcc;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.2);
+            object-fit: cover;
+            transition: 0.3s;
+        }
+
+        #latestImage:hover {
+            transform: scale(1.02);
+            box-shadow: 0 0 30px rgba(0, 255, 204, 0.4);
+        }
+
+        /* গ্যালারি গ্রিড */
+        .gallery-title {
+            padding: 0 20px;
+            margin-top: 20px;
+            font-size: 18px;
+            color: #fff;
+            border-left: 4px solid #ff007f;
+            padding-left: 10px;
+        }
+
+        .gallery {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+            gap: 10px;
+            padding: 20px;
+        }
+
+        .gallery-item {
+            position: relative;
+            border-radius: 10px;
+            overflow: hidden;
+            aspect-ratio: 1/1;
+            cursor: pointer;
+            border: 1px solid #333;
+            transition: 0.3s;
+            animation: slideIn 0.5s ease-out;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .gallery-item:hover {
+            transform: scale(1.05);
+            border-color: #00ffcc;
+            z-index: 10;
+        }
+
+        .gallery-item img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .time-overlay {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: linear-gradient(transparent, rgba(0,0,0,0.9));
+            color: #fff;
+            font-size: 10px;
+            padding: 10px 5px 5px 5px;
+            text-align: center;
+        }
+
+        /* ফুল স্ক্রিন মোডাল */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .modal img {
+            max-width: 95%;
+            max-height: 85vh;
+            border-radius: 10px;
+            border: 2px solid #333;
+            box-shadow: 0 0 40px rgba(0,0,0,0.8);
+        }
+
+        .close-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            color: #fff;
+            font-size: 30px;
+            cursor: pointer;
+            background: rgba(255,255,255,0.1);
+            width: 40px;
+            height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            transition: 0.3s;
+        }
+
+        .close-btn:hover {
+            background: #ff007f;
+        }
+
+    </style>
+</head>
+<body>
+
+    <!-- হেডার -->
+    <header>
+        <div class="status-box">
+            <div class="dot" id="statusDot"></div>
+            <span id="statusText">Connecting...</span>
+        </div>
+        <div class="counter">Total: <span id="photoCount">0</span></div>
+    </header>
+
+    <!-- লেটেস্ট ফটো -->
+    <div class="latest-section">
+        <div class="latest-title">Latest Photo</div>
+        <img id="latestImage" src="" alt="Waiting for photos...">
+    </div>
+
+    <!-- গ্যালারি -->
+    <div class="gallery-title">All Photos</div>
+    <div class="gallery" id="gallery"></div>
+
+    <!-- ফুল স্ক্রিন মোডাল -->
+    <div class="modal" id="myModal">
+        <div class="close-btn" onclick="closeModal()">&times;</div>
+        <img id="modalImage" src="">
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, onChildAdded } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBNm5349AnjfD64njYK_MyOUbPgh2Fsr5s",
+            authDomain: "gallary-eda4d.firebaseapp.com",
+            databaseURL: "https://gallary-eda4d-default-rtdb.firebaseio.com/",
+            projectId: "gallary-eda4d",
+            storageBucket: "gallary-eda4d.firebasestorage.app",
+            messagingSenderId: "565443516153",
+            appId: "1:565443516153:web:c4b32e34138f14c679f428",
+            measurementId: "G-FT6WYWFBR9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const gallery = document.getElementById('gallery');
+        const latestImage = document.getElementById('latestImage');
+        const photoCountElement = document.getElementById('photoCount');
+        const statusDot = document.getElementById('statusDot');
+        const statusText = document.getElementById('statusText');
+
+        let count = 0;
+
+        // ডাটাবেস থেকে ছবি রিসিভ করা
+        const photosRef = ref(db, 'all_photos');
+        
+        onChildAdded(photosRef, (snapshot) => {
+            const data = snapshot.val();
+            
+            if (data && data.image) {
+                // স্ট্যাটাস চালু করা
+                statusDot.classList.add('active');
+                statusText.innerText = "Camera Connected";
+                
+                // কাউন্টার বাড়ানো
+                count++;
+                photoCountElement.innerText = count;
+
+                // লেটেস্ট ছবি আপডেট
+                latestImage.src = data.image;
+
+                // গ্যালারিতে নতুন ছবি যোগ করা
+                const item = document.createElement('div');
+                item.className = 'gallery-item';
+                
+                const img = document.createElement('img');
+                img.src = data.image;
+                
+                const timeText = document.createElement('div');
+                timeText.className = 'time-overlay';
+                // শুধু সময়টা দেখাবে (যেমন: 10:30:45 AM)
+                timeText.innerText = new Date(data.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                item.appendChild(img);
+                item.appendChild(timeText);
+
+                // ছবিতে ক্লিক করলে ফুল স্ক্রিনে দেখাবে
+                item.onclick = function() {
+                    document.getElementById('modalImage').src = data.image;
+                    document.getElementById('myModal').style.display = 'flex';
+                };
+
+                // নতুন ছবি সবার আগে দেখাবে
+                gallery.prepend(item);
+            }
+        });
+
+        // মোডাল বন্ধ করার ফাংশন
+        window.closeModal = function() {
+            document.getElementById('myModal').style.display = 'none';
+        };
+    </script>
+</body>
+</html>

